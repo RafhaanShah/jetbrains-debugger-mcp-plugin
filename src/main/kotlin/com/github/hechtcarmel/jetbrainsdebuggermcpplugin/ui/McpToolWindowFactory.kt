@@ -57,7 +57,7 @@ class McpToolWindowFactory : ToolWindowFactory, DumbAware {
         )
         leftToolbar.targetComponent = panel
 
-        // Settings link with label "Change port"
+        // Settings link with label "Settings"
         val settingsPanel = createSettingsPanel(project)
 
         // Create prominent "Install on Coding Agents" button with text
@@ -176,7 +176,7 @@ class McpToolWindowFactory : ToolWindowFactory, DumbAware {
             }
 
             // Label text - always use HTML to prevent layout shift on hover
-            val settingsText = "Change port"
+            val settingsText = "Settings"
             val settingsLabel = JBLabel("<html>$settingsText</html>").apply {
                 font = font.deriveFont(Font.PLAIN, 11f)
                 foreground = JBColor.BLUE

@@ -1,6 +1,8 @@
 package com.github.hechtcarmel.jetbrainsdebuggermcpplugin.settings
 
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.McpConstants
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.evaluation.CustomEvaluateExpressionBlockRule
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.evaluation.EvaluateExpressionSafetyMode
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -24,6 +26,8 @@ class McpSettings : PersistentStateComponent<McpSettings.State> {
         var maxHistorySize: Int = 1000,
         var serverPort: Int = -1, // -1 means use IDE-specific default
         var serverHost: String = "", // empty means use DEFAULT_SERVER_HOST
+        var evaluateExpressionSafetyModeId: String = EvaluateExpressionSafetyMode.DEFAULT.id,
+        var customEvaluateExpressionBlockRules: MutableList<CustomEvaluateExpressionBlockRule> = mutableListOf(),
         var migratedToVersion: Int = 0 // Track migration status (2 = v2.0.0 migration done)
     )
 
@@ -46,6 +50,20 @@ class McpSettings : PersistentStateComponent<McpSettings.State> {
     var serverHost: String
         get() = myState.serverHost.ifEmpty { McpConstants.DEFAULT_SERVER_HOST }
         set(value) { myState.serverHost = value }
+
+    var evaluateExpressionSafetyMode: EvaluateExpressionSafetyMode
+        get() = EvaluateExpressionSafetyMode.fromId(myState.evaluateExpressionSafetyModeId)
+        set(value) { myState.evaluateExpressionSafetyModeId = value.id }
+
+    var customEvaluateExpressionBlockRules: MutableList<CustomEvaluateExpressionBlockRule>
+        get() = myState.customEvaluateExpressionBlockRules
+            .map { it.copyForPersistence() }
+            .toMutableList()
+        set(value) {
+            myState.customEvaluateExpressionBlockRules = value
+                .map { it.copyForPersistence() }
+                .toMutableList()
+        }
 
     /**
      * Checks if migration to v2.0.0 is needed (user upgrading from v1.x).

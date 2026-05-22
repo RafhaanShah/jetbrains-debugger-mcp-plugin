@@ -38,6 +38,7 @@ A JetBrains IDE plugin that exposes an **MCP (Model Context Protocol) server**, 
 **Expression Evaluation**
 - **Evaluate Expressions** - Run arbitrary expressions in the current context
 - **Code Fragments** - Execute multi-line code snippets
+- **Safety Controls** - Choose unrestricted evaluation, a default risky-operation blocklist, or conservative read-only checks with optional custom regex block rules
 
 **Stack & Thread Navigation**
 - **Stack Traces** - View the complete call stack with source locations
@@ -328,18 +329,18 @@ The plugin adds a "Debugger MCP Server" tool window (bottom panel) that shows:
 
 ### Tool Window Actions
 
-| Action | Description |
-|--------|-------------|
-| Refresh | Refresh server status and command history |
-| Copy URL | Copy the MCP server URL to clipboard |
-| Clear History | Clear the command history |
-| Export History | Export history to JSON file |
-| Change Port | Open settings to configure server port and host |
-| Star/Report Issues | Link to GitHub repository |
-| Try IDE Index MCP Server | Link to companion plugin |
-| Buy Me a Coffee | Support the developer |
-| **Get Companion Skill** | Install or export the companion AI skill for enhanced debugging guidance |
-| **Install on Coding Agents** | Install MCP server on AI assistants (prominent button on right) |
+| Action                       | Description                                                              |
+|------------------------------|--------------------------------------------------------------------------|
+| Refresh                      | Refresh server status and command history                                |
+| Copy URL                     | Copy the MCP server URL to clipboard                                     |
+| Clear History                | Clear the command history                                                |
+| Export History               | Export history to JSON file                                              |
+| Settings                     | Open settings                                                            |
+| Star/Report Issues           | Link to GitHub repository                                                |
+| Try IDE Index MCP Server     | Link to companion plugin                                                 |
+| Buy Me a Coffee              | Support the developer                                                    |
+| **Get Companion Skill**      | Install or export the companion AI skill for enhanced debugging guidance |
+| **Install on Coding Agents** | Install MCP server on AI assistants (prominent button on right)          |
 
 ## Error Codes
 
@@ -372,6 +373,18 @@ Configure the plugin at <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>Debugger M
 | Server Host | 127.0.0.1 | Bind address for the MCP server. Use `127.0.0.1` for localhost only, `0.0.0.0` for all interfaces, or a custom IP |
 | Server Port | IDE-specific | Each IDE has a unique default port (e.g., 29190 for IntelliJ, 29192 for PyCharm). Range: 1024-65535 |
 | Max History Size | 1000 | Maximum number of commands to keep in history |
+| Evaluate Expression Safety Mode | Unrestricted | Controls plugin-side filtering before `evaluate_expression` reaches the debugger evaluator. `Unrestricted` preserves previous behavior. `Default blocklist` blocks built-in risky categories. `Read-only` also rejects mutation syntax and method calls that cannot be proven read-only |
+| Additional blocked regex patterns | None | Optional custom deny rules for `evaluate_expression`. They apply in `Default blocklist` and `Read-only`, never in `Unrestricted`, and match expression text after comments and string literals are removed |
+
+### Evaluate Expression Safety
+
+`evaluate_expression` is powerful because IDE debuggers can call methods and run code in the debugged process. The safety setting is a best-effort guardrail, not a sandbox.
+
+- **Unrestricted** - No plugin-side filtering. Expressions may call methods, mutate state, access files/network, or run any operation accepted by the debugger.
+- **Default blocklist** - Blocks common high-risk categories: process execution, JVM termination, filesystem access, network access, reflection/access bypass, native code loading, and environment/system property access. Custom regex rules also apply.
+- **Read-only** - Includes the default blocklist and custom regex rules, then rejects assignments, increment/decrement operations, code fragments, constructors, and method calls that cannot be proven read-only.
+
+Custom regex rules are additional blocked patterns. They do not replace the built-in restrictions.
 
 ## Requirements
 

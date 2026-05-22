@@ -1294,6 +1294,18 @@ Evaluates an arbitrary expression in the current debug context and returns the r
 | `frame_index` | integer | No | Stack frame context (default: 0) |
 | `project_path` | string | No | Project path |
 
+**Safety modes:**
+
+Configure at <kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>Debugger MCP Server</kbd>.
+
+| Mode | Behavior |
+|------|----------|
+| `Unrestricted` | No plugin-side filtering. Preserves previous behavior and allows any expression accepted by the debugger evaluator |
+| `Default blocklist` | Blocks process execution, JVM termination, filesystem access, network access, reflection/access bypass, native code loading, and environment/system property access. Custom regex rules also apply |
+| `Read-only` | Includes default blocklist and custom regex rules, then rejects assignments, increment/decrement operations, code fragments, constructors, and method calls that cannot be proven read-only |
+
+Additional blocked regex patterns can be configured in settings. They apply in `Default blocklist` and `Read-only`, never in `Unrestricted`, and are matched after comments and string literals are removed.
+
 **Example Request (simple):**
 
 ```json

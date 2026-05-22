@@ -2,6 +2,7 @@ package com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.evaluation
 
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolAnnotations
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.settings.McpSettings
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluateResponse
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluationResult
@@ -34,6 +35,7 @@ class EvaluateTool : AbstractMcpTool() {
     override val description = """
         Evaluates an arbitrary expression in the current debug context and returns the result.
         Use to compute values, call methods, or inspect complex expressions. Can modify state if the expression has side effects.
+        Evaluation is filtered by the IDE's Evaluate Expression safety mode unless it is set to Unrestricted.
 
         **Language limitations:** Native debuggers (LLDB/GDB) used for Rust, C++, and Go have limited expression evaluation. Method calls (e.g., `s.len()`, `vec.size()`) may not work. Variable inspection works well. Full expression support is available in Java, Kotlin, Python, and JavaScript.
     """.trimIndent()
@@ -49,7 +51,7 @@ class EvaluateTool : AbstractMcpTool() {
             put(sessionName, sessionSchema)
             putJsonObject("expression") {
                 put("type", "string")
-                put("description", "Expression to evaluate in the current context. Can be a variable name, method call, arithmetic, or complex expression. Examples: 'x', 'list.size()', 'a + b * 2', 'String.format(\"%d\", count)'")
+                put("description", "Expression to evaluate in the current context. Can be a variable name, method call, arithmetic, or complex expression. May be blocked by the IDE's Evaluate Expression safety mode. Examples: 'x', 'list.size()', 'a + b * 2', 'String.format(\"%d\", count)'")
             }
             putJsonObject("frame_index") {
                 put("type", "integer")
@@ -88,6 +90,20 @@ class EvaluateTool : AbstractMcpTool() {
 
         val evaluator = frame.evaluator
             ?: return createErrorResult("No evaluator available for frame at index $frameIndex")
+
+        val settings = McpSettings.getInstance()
+        val safetyViolation = EvaluateExpressionSafetyGuard.validate(
+            expression = expression,
+            mode = settings.evaluateExpressionSafetyMode,
+            context = EvaluateExpressionSafetyGuard.Context(
+                project = project,
+                sourcePosition = frame.sourcePosition
+            ),
+            customRules = settings.customEvaluateExpressionBlockRules
+        )
+        if (safetyViolation != null) {
+            return createErrorResult(safetyViolation.toUserMessage())
+        }
 
         val result = evaluateExpression(evaluator, expression)
             ?: return createErrorResult("Evaluation timed out or failed")
