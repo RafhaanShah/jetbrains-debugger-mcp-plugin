@@ -329,18 +329,18 @@ The plugin adds a "Debugger MCP Server" tool window (bottom panel) that shows:
 
 ### Tool Window Actions
 
-| Action | Description |
-|--------|-------------|
-| Refresh | Refresh server status and command history |
-| Copy URL | Copy the MCP server URL to clipboard |
-| Clear History | Clear the command history |
-| Export History | Export history to JSON file |
-| Change Port | Open settings to configure server port and host |
-| Star/Report Issues | Link to GitHub repository |
-| Try IDE Index MCP Server | Link to companion plugin |
-| Buy Me a Coffee | Support the developer |
-| **Get Companion Skill** | Install or export the companion AI skill for enhanced debugging guidance |
-| **Install on Coding Agents** | Install MCP server on AI assistants (prominent button on right) |
+| Action                       | Description                                                              |
+|------------------------------|--------------------------------------------------------------------------|
+| Refresh                      | Refresh server status and command history                                |
+| Copy URL                     | Copy the MCP server URL to clipboard                                     |
+| Clear History                | Clear the command history                                                |
+| Export History               | Export history to JSON file                                              |
+| Settings                     | Open settings                                                            |
+| Star/Report Issues           | Link to GitHub repository                                                |
+| Try IDE Index MCP Server     | Link to companion plugin                                                 |
+| Buy Me a Coffee              | Support the developer                                                    |
+| **Get Companion Skill**      | Install or export the companion AI skill for enhanced debugging guidance |
+| **Install on Coding Agents** | Install MCP server on AI assistants (prominent button on right)          |
 
 ## Error Codes
 
