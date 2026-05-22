@@ -327,6 +327,13 @@ Evaluate an expression in the current debug context.
 
 **Returns:** `sessionId`, `frameIndex`, `result` (expression, value, type, hasChildren, error)
 
+**Safety settings:** The IDE can filter this tool before evaluation:
+- `Unrestricted`: no plugin-side filtering
+- `Default blocklist`: blocks process execution, JVM termination, filesystem access, network access, reflection/access bypass, native code loading, and environment/system property access
+- `Read-only`: includes the default blocklist and custom regex rules, then rejects assignments, increment/decrement, code fragments, constructors, and method calls that cannot be proven read-only
+
+Custom regex block rules apply in `Default blocklist` and `Read-only`, never in `Unrestricted`. They match after comments and string literals are removed.
+
 **Limitations for native languages (Rust, C++, Go, Swift):**
 - Variable inspection works
 - Method calls (e.g., `s.len()`, `vec.size()`) may fail

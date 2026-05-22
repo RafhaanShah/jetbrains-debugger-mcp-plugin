@@ -67,6 +67,8 @@ Use these tools to **actually debug** applications in a JetBrains IDE rather tha
 
 7. **`project_path` is required when multiple projects are open.** If omitted with multiple projects, tools return an error listing available projects.
 
+8. **`evaluate_expression` may be safety-filtered by IDE settings.** If a call is blocked, prefer `get_variables`, simple field/arithmetic expressions, or a narrower expression that avoids method calls and risky APIs. Do not retry blocked process, filesystem, network, reflection, native-loading, or environment/system-property operations unless the user explicitly changes the IDE setting.
+
 ## Debugging Patterns
 
 ### Pattern: Find Why a Value is Wrong
@@ -124,6 +126,7 @@ Use these tools to **actually debug** applications in a JetBrains IDE rather tha
 | Using relative file paths | Always use **absolute** file paths |
 | Not waiting after `resume_execution` | Use `wait_for_pause` to block until the next breakpoint is hit |
 | Calling `evaluate_expression` with method calls in Rust/C++/Go | Use `get_variables` for native languages; method calls may fail in LLDB/GDB |
+| Retrying an `evaluate_expression` blocked by safety settings | Use `get_variables` or a simpler read-only expression; blocked categories are controlled by the user in IDE settings |
 | Guessing variable values from source code | Use the debugger to inspect actual runtime values |
 | Forgetting to `stop_debug_session` when done | Always clean up debug sessions |
 

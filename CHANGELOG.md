@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-05-22
+
+### Added
+- Added configurable safety controls for `evaluate_expression`, including a default risky-operation blocklist, read-only mode, and optional custom regex block rules.
+
 ## [4.2.0] - 2026-04-02
 
 ### Added
