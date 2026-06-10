@@ -5,16 +5,10 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallR
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.VariableInfo
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.VariablesResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.FrameVariablesCollector
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.StackFrameUtils
-import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VariablePresentationUtils
 import com.intellij.openapi.project.Project
-import com.intellij.ui.SimpleTextAttributes
-import com.intellij.xdebugger.frame.XCompositeNode
-import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink
 import com.intellij.xdebugger.frame.XStackFrame
-import com.intellij.xdebugger.frame.XValueChildrenList
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -23,8 +17,6 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import javax.swing.Icon
-import kotlin.coroutines.resume
 
 /**
  * Gets variables from the current stack frame.
@@ -111,73 +103,6 @@ class GetVariablesTool : AbstractMcpTool() {
     }
 
     private suspend fun getVariablesFromFrame(frame: XStackFrame): List<VariableInfo> {
-        return withTimeoutOrNull(5000L) {
-            suspendCancellableCoroutine { continuation ->
-                val variables = mutableListOf<VariableInfo>()
-                var completed = false
-                var pendingPresentations = 0
-
-                frame.computeChildren(object : XCompositeNode {
-                    override fun addChildren(children: XValueChildrenList, last: Boolean) {
-                        pendingPresentations += children.size()
-
-                        for (i in 0 until children.size()) {
-                            val name = children.getName(i)
-                            val value = children.getValue(i)
-
-                            VariablePresentationUtils.computeValuePresentation(name, value) { varInfo ->
-                                synchronized(variables) {
-                                    variables.add(varInfo)
-                                    pendingPresentations--
-
-                                    if (last && pendingPresentations <= 0 && !completed) {
-                                        completed = true
-                                        continuation.resume(variables.toList())
-                                    }
-                                }
-                            }
-                        }
-
-                        if (last && pendingPresentations <= 0 && !completed) {
-                            completed = true
-                            continuation.resume(variables.toList())
-                        }
-                    }
-
-                    override fun setAlreadySorted(alreadySorted: Boolean) {}
-
-                    override fun setErrorMessage(errorMessage: String) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(emptyList())
-                        }
-                    }
-
-                    override fun setErrorMessage(
-                        errorMessage: String,
-                        link: XDebuggerTreeNodeHyperlink?
-                    ) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(emptyList())
-                        }
-                    }
-
-                    override fun setMessage(
-                        message: String,
-                        icon: Icon?,
-                        attributes: SimpleTextAttributes,
-                        link: XDebuggerTreeNodeHyperlink?
-                    ) {}
-
-                    @Deprecated("Deprecated in Java")
-                    override fun tooManyChildren(remaining: Int) {}
-
-                    override fun tooManyChildren(remaining: Int, addNextChildren: Runnable) {}
-
-                    override fun isObsolete(): Boolean = false
-                })
-            }
-        } ?: emptyList()
+        return FrameVariablesCollector.collectVariables(frame)
     }
 }

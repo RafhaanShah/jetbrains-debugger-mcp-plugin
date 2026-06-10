@@ -10,7 +10,6 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebuggerManager
@@ -28,7 +27,6 @@ import kotlinx.serialization.json.put
  * This class provides:
  * - Debugger access helpers ([getDebuggerManager], [getCurrentSession], [resolveSession])
  * - Thread-safe operations ([readAction], [writeAction], [suspendingWriteAction])
- * - File resolution ([resolveFile])
  * - Result creation ([createSuccessResult], [createErrorResult], [createJsonResult])
  * - Cancellation checking ([checkCanceled])
  *
@@ -324,19 +322,6 @@ abstract class AbstractMcpTool : McpTool {
     }
 
     // ========== File Resolution Helpers ==========
-
-    /**
-     * Resolves a file path to a [VirtualFile].
-     *
-     * @param project The project context
-     * @param relativePath Path relative to project root, or absolute path
-     * @return The VirtualFile, or null if not found
-     */
-    protected fun resolveFile(project: Project, relativePath: String): VirtualFile? {
-        val basePath = project.basePath ?: return null
-        val fullPath = if (relativePath.startsWith("/")) relativePath else "$basePath/$relativePath"
-        return LocalFileSystem.getInstance().refreshAndFindFileByPath(fullPath)
-    }
 
     /**
      * Converts an absolute file path to a project-relative path.

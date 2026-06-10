@@ -5,10 +5,10 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallR
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SourceContext
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SourceLine
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.breakpoints.XLineBreakpoint
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
@@ -38,7 +38,7 @@ class GetSourceContextTool : AbstractMcpTool() {
             put(sessionName, sessionSchema)
             putJsonObject("file_path") {
                 put("type", "string")
-                put("description", "Absolute path to the source file. If not provided, uses current debug position.")
+                put("description", "Absolute path to the source file. Files inside JAR/ZIP archives are supported with the '!/' separator, e.g. '/path/to/lib-sources.jar!/com/example/Foo.kt' (the IDE's 'Copy Absolute Path' format for library sources). If not provided, uses current debug position.")
             }
             putJsonObject("line") {
                 put("type", "integer")
@@ -92,8 +92,12 @@ class GetSourceContextTool : AbstractMcpTool() {
             centerLine = position.line + 1
         }
 
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
-            ?: return createErrorResult("File not found: $filePath")
+        val virtualFile = VirtualFileResolver.resolve(filePath)
+            ?: return createErrorResult(
+                "File not found: $filePath. " +
+                    "For files inside JAR archives, use the '!/' separator " +
+                    "(e.g. /path/to/lib-sources.jar!/com/example/Foo.kt)."
+            )
 
         val (startLine, endLine, lines) = readAction {
             val document = FileDocumentManager.getInstance().getDocument(virtualFile)

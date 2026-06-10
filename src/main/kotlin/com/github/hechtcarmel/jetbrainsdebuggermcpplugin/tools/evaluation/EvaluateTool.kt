@@ -6,15 +6,11 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.settings.McpSettings
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluateResponse
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.EvaluationResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.EvaluatorUtils
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.StackFrameUtils
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VariablePresentationUtils
 import com.intellij.openapi.project.Project
-import com.intellij.xdebugger.XDebuggerUtil
-import com.intellij.xdebugger.evaluation.EvaluationMode
 import com.intellij.xdebugger.evaluation.XDebuggerEvaluator
-import com.intellij.xdebugger.frame.XValue
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -23,7 +19,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import kotlin.coroutines.resume
 
 /**
  * Evaluates an expression in the current debug context.
@@ -119,37 +114,33 @@ class EvaluateTool : AbstractMcpTool() {
         evaluator: XDebuggerEvaluator,
         expression: String
     ): EvaluationResult? {
-        return withTimeoutOrNull(10000L) {
-            suspendCancellableCoroutine { continuation ->
-                val xExpression = XDebuggerUtil.getInstance().createExpression(expression, null, null, EvaluationMode.EXPRESSION)
+        return when (val outcome = EvaluatorUtils.evaluate(evaluator, expression, EVALUATION_TIMEOUT_MS)) {
+            is EvaluatorUtils.EvaluationOutcome.Timeout -> null
 
-                evaluator.evaluate(
-                    xExpression,
-                    object : XDebuggerEvaluator.XEvaluationCallback {
-                        override fun evaluated(result: XValue) {
-                            VariablePresentationUtils.computeFullPresentation(result) { presentation ->
-                                continuation.resume(EvaluationResult(
-                                    expression = expression,
-                                    value = presentation.value,
-                                    type = presentation.type,
-                                    hasChildren = presentation.hasChildren
-                                ))
-                            }
-                        }
+            is EvaluatorUtils.EvaluationOutcome.Failure -> EvaluationResult(
+                expression = expression,
+                value = "",
+                type = "error",
+                hasChildren = false,
+                error = outcome.error
+            )
 
-                        override fun errorOccurred(errorMessage: String) {
-                            continuation.resume(EvaluationResult(
-                                expression = expression,
-                                value = "",
-                                type = "error",
-                                hasChildren = false,
-                                error = errorMessage
-                            ))
-                        }
-                    },
-                    null
+            is EvaluatorUtils.EvaluationOutcome.Success -> {
+                val presentation = VariablePresentationUtils.awaitPresentation(
+                    outcome.value, PRESENTATION_TIMEOUT_MS
+                )
+                EvaluationResult(
+                    expression = expression,
+                    value = presentation?.value ?: VariablePresentationUtils.UNAVAILABLE_VALUE_TEXT,
+                    type = presentation?.type ?: "unknown",
+                    hasChildren = presentation?.hasChildren ?: false
                 )
             }
         }
+    }
+
+    private companion object {
+        const val EVALUATION_TIMEOUT_MS = 10000L
+        const val PRESENTATION_TIMEOUT_MS = 5000L
     }
 }

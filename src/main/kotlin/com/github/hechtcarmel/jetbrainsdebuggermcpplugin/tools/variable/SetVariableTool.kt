@@ -4,19 +4,13 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolAnnot
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SetVariableResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.EvaluatorUtils
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.FrameVariablesCollector
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VariablePresentationUtils
 import com.intellij.openapi.project.Project
-import com.intellij.ui.SimpleTextAttributes
-import com.intellij.xdebugger.XDebuggerUtil
-import com.intellij.xdebugger.evaluation.EvaluationMode
 import com.intellij.xdebugger.evaluation.XDebuggerEvaluator
-import com.intellij.xdebugger.frame.XCompositeNode
-import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink
 import com.intellij.xdebugger.frame.XStackFrame
 import com.intellij.xdebugger.frame.XValue
-import com.intellij.xdebugger.frame.XValueChildrenList
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -24,8 +18,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import javax.swing.Icon
-import kotlin.coroutines.resume
 
 class SetVariableTool : AbstractMcpTool() {
 
@@ -119,86 +111,35 @@ class SetVariableTool : AbstractMcpTool() {
     )
 
     private suspend fun findVariableByName(frame: XStackFrame, targetName: String): VariableData? {
-        return withTimeoutOrNull(5000L) {
-            suspendCancellableCoroutine { continuation ->
-                var result: VariableData? = null
-                var pendingPresentations = 0
-                var foundVariable: XValue? = null
-                var completed = false
-
-                frame.computeChildren(object : XCompositeNode {
-                    override fun addChildren(children: XValueChildrenList, last: Boolean) {
-                        for (i in 0 until children.size()) {
-                            val name = children.getName(i)
-                            if (name == targetName) {
-                                foundVariable = children.getValue(i)
-                                pendingPresentations++
-                                VariablePresentationUtils.computeSimplePresentation(foundVariable!!) { displayValue, type ->
-                                    synchronized(this@SetVariableTool) {
-                                        result = VariableData(foundVariable!!, displayValue, type)
-                                        pendingPresentations--
-                                        if (!completed) {
-                                            completed = true
-                                            continuation.resume(result)
-                                        }
-                                    }
-                                }
-                                break
-                            }
-                        }
-
-                        if (last && foundVariable == null && !completed) {
-                            completed = true
-                            continuation.resume(null)
-                        }
-                    }
-
-                    override fun setAlreadySorted(alreadySorted: Boolean) {}
-                    override fun setErrorMessage(errorMessage: String) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(null)
-                        }
-                    }
-                    override fun setErrorMessage(errorMessage: String, link: XDebuggerTreeNodeHyperlink?) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(null)
-                        }
-                    }
-                    override fun setMessage(message: String, icon: Icon?, attributes: SimpleTextAttributes, link: XDebuggerTreeNodeHyperlink?) {}
-                    override fun tooManyChildren(remaining: Int) {}
-                    override fun tooManyChildren(remaining: Int, addNextChildren: Runnable) {}
-                    override fun isObsolete(): Boolean = false
-                })
-            }
-        }
+        val children = FrameVariablesCollector.collectChildren(frame) ?: return null
+        val match = children.firstOrNull { (name, _) -> name == targetName } ?: return null
+        val presentation = VariablePresentationUtils.awaitPresentation(match.second)
+        return VariableData(
+            value = match.second,
+            displayValue = presentation?.value ?: VariablePresentationUtils.UNAVAILABLE_VALUE_TEXT,
+            type = presentation?.type ?: "unknown"
+        )
     }
 
     private suspend fun evaluateAssignment(
         evaluator: XDebuggerEvaluator,
         assignmentExpression: String
     ): SetResult {
-        return withTimeoutOrNull(5000L) {
-            suspendCancellableCoroutine { continuation ->
-                val xExpression = XDebuggerUtil.getInstance().createExpression(assignmentExpression, null, null, EvaluationMode.EXPRESSION)
+        return when (val outcome = EvaluatorUtils.evaluate(evaluator, assignmentExpression, ASSIGNMENT_TIMEOUT_MS)) {
+            is EvaluatorUtils.EvaluationOutcome.Timeout ->
+                SetResult(success = false, error = "Timeout while setting variable value")
 
-                evaluator.evaluate(
-                    xExpression,
-                    object : XDebuggerEvaluator.XEvaluationCallback {
-                        override fun evaluated(result: XValue) {
-                            VariablePresentationUtils.computeSimplePresentation(result) { valueText, _ ->
-                                continuation.resume(SetResult(success = true, resultValue = valueText))
-                            }
-                        }
+            is EvaluatorUtils.EvaluationOutcome.Failure ->
+                SetResult(success = false, error = outcome.error)
 
-                        override fun errorOccurred(errorMessage: String) {
-                            continuation.resume(SetResult(success = false, error = errorMessage))
-                        }
-                    },
-                    null
-                )
+            is EvaluatorUtils.EvaluationOutcome.Success -> {
+                val presentation = VariablePresentationUtils.awaitPresentation(outcome.value)
+                SetResult(success = true, resultValue = presentation?.value)
             }
-        } ?: SetResult(success = false, error = "Timeout while setting variable value")
+        }
+    }
+
+    private companion object {
+        const val ASSIGNMENT_TIMEOUT_MS = 5000L
     }
 }

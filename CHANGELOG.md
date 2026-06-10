@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+## [4.3.1]
+
+### Fixed
+- `get_variables`, `evaluate_expression`, `set_variable`, `get_debug_session_status`, and `wait_for_pause` no longer return the localized "Collecting data..." placeholder (or duplicate entries) - the plugin now waits for the debugger's asynchronous value presentation ([#51](https://github.com/hechtcarmel/jetbrains-debugger-mcp-plugin/issues/51))
+- `set_breakpoint`, `run_to_line`, and `get_source_context` now accept files inside JAR archives using the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) ([#51](https://github.com/hechtcarmel/jetbrains-debugger-mcp-plugin/issues/51))
+
 ## [4.3.0] - 2026-05-22
 
 ### Added

@@ -5,10 +5,10 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallR
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.SetBreakpointResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.LogMessageTransformer
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.breakpoints.XBreakpointProperties
 import com.intellij.xdebugger.breakpoints.XBreakpointType
@@ -49,7 +49,7 @@ class SetBreakpointTool : AbstractMcpTool() {
             put(propName, propSchema)
             putJsonObject("file_path") {
                 put("type", "string")
-                put("description", "Absolute path to the file")
+                put("description", "Absolute path to the file. Files inside JAR/ZIP archives are supported with the '!/' separator, e.g. '/path/to/lib-sources.jar!/com/example/Foo.kt' (the IDE's 'Copy Absolute Path' format for library sources).")
             }
             putJsonObject("line") {
                 put("type", "integer")
@@ -104,8 +104,13 @@ class SetBreakpointTool : AbstractMcpTool() {
         val temporary = arguments["temporary"]?.jsonPrimitive?.booleanOrNull ?: false
 
         // Find the file
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
-            ?: return createErrorResult("File not found: $filePath")
+        val virtualFile = VirtualFileResolver.resolve(filePath)
+            ?: return createErrorResult(
+                "File not found: $filePath. " +
+                    "For files inside JAR archives, use the '!/' separator " +
+                    "(e.g. /path/to/lib-sources.jar!/com/example/Foo.kt) and ensure the JAR " +
+                    "is attached to the project as a library."
+            )
 
         val breakpointManager = getDebuggerManager(project).breakpointManager
         val lineIndex = line - 1 // Convert to 0-based
