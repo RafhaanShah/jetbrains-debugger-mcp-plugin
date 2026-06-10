@@ -104,6 +104,9 @@ Use log breakpoints (tracepoints) to trace execution without stopping:
 
 You can also pass raw language-specific expressions directly (e.g., `"\"x=\" + x"` for Java) - they pass through unchanged if no `{...}` placeholders are detected.
 
+### Breakpoints in Library Sources (JARs)
+JAR-source breakpoints use the `!/` path form (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) and require the JAR to be attached to the project (library sources).
+
 ### Evaluate Before Modifying
 Before using `set_variable`, use `evaluate_expression` to preview the change:
 ```json
@@ -114,10 +117,10 @@ Before using `set_variable`, use `evaluate_expression` to preview the change:
 ```
 
 ### Handle Multiple Projects
-When multiple projects are open in the IDE, always specify `projectPath`:
+When multiple projects are open in the IDE, always specify `project_path`:
 ```json
 {
-  "projectPath": "/Users/dev/my-project",
+  "project_path": "/Users/dev/my-project",
   "file_path": "/src/Main.java",
   "line": 10
 }
@@ -161,7 +164,7 @@ Tools return structured errors:
 - `session_not_paused` - Operation requires paused session
 - `breakpoint_not_found` - Invalid breakpoint_id
 - `invalid_location` - Cannot set breakpoint at location
-- `multiple_projects_open` - Must specify projectPath
+- `multiple_projects_open` - Must specify project_path
 - `evaluation_error` - Expression evaluation failed
 
 ## Language-Specific Limitations

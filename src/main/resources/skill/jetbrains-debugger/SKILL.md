@@ -61,7 +61,7 @@ Use these tools to **actually debug** applications in a JetBrains IDE rather tha
 
 4. **Line numbers are 1-based.** When setting breakpoints or using `run_to_line`, use the line numbers as they appear in the editor (starting from 1).
 
-5. **File paths must be absolute.** For `set_breakpoint`, `run_to_line`, and `get_source_context`, always use absolute file paths (e.g., `/Users/dev/project/src/Main.java`).
+5. **File paths must be absolute.** For `set_breakpoint`, `run_to_line`, and `get_source_context`, always use absolute file paths (e.g., `/Users/dev/project/src/Main.java`). Files inside JARs are supported via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`).
 
 6. **`session_id` is optional for single-session debugging.** When only one debug session exists, all tools auto-select it. Only specify `session_id` when multiple sessions are active.
 

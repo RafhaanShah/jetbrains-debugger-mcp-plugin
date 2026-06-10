@@ -5,23 +5,10 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.ui.SimpleTextAttributes
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.breakpoints.XLineBreakpoint
-import com.intellij.xdebugger.frame.XCompositeNode
-import com.intellij.xdebugger.frame.XDebuggerTreeNodeHyperlink
-import com.intellij.xdebugger.frame.XFullValueEvaluator
 import com.intellij.xdebugger.frame.XStackFrame
-import com.intellij.xdebugger.frame.XValue
-import com.intellij.xdebugger.frame.XValueChildrenList
-import com.intellij.xdebugger.frame.XValueNode
-import com.intellij.xdebugger.frame.XValuePlace
-import com.intellij.xdebugger.frame.presentation.XValuePresentation
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
-import javax.swing.Icon
-import kotlin.coroutines.resume
 
 object SessionStatusCollector {
 
@@ -88,67 +75,7 @@ object SessionStatusCollector {
 
     suspend fun getVariables(frame: XStackFrame?): List<VariableInfo> {
         if (frame == null) return emptyList()
-
-        return withTimeoutOrNull(3000L) {
-            suspendCancellableCoroutine { continuation ->
-                val variables = mutableListOf<VariableInfo>()
-                var completed = false
-
-                frame.computeChildren(object : XCompositeNode {
-                    override fun addChildren(children: XValueChildrenList, last: Boolean) {
-                        for (i in 0 until children.size()) {
-                            val name = children.getName(i)
-                            val value = children.getValue(i)
-
-                            getValuePresentation(value) { presentation, type, hasChildren ->
-                                synchronized(variables) {
-                                    variables.add(VariableInfo(
-                                        name = name,
-                                        value = presentation,
-                                        type = type,
-                                        hasChildren = hasChildren
-                                    ))
-                                }
-                            }
-                        }
-
-                        if (last && !completed) {
-                            completed = true
-                            continuation.resume(variables.toList())
-                        }
-                    }
-
-                    override fun setAlreadySorted(alreadySorted: Boolean) {}
-
-                    override fun setErrorMessage(errorMessage: String) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(emptyList())
-                        }
-                    }
-
-                    override fun setErrorMessage(errorMessage: String, link: XDebuggerTreeNodeHyperlink?) {
-                        if (!completed) {
-                            completed = true
-                            continuation.resume(emptyList())
-                        }
-                    }
-
-                    override fun setMessage(
-                        message: String,
-                        icon: Icon?,
-                        attributes: SimpleTextAttributes,
-                        link: XDebuggerTreeNodeHyperlink?
-                    ) {}
-
-                    override fun tooManyChildren(remaining: Int) {}
-
-                    override fun tooManyChildren(remaining: Int, addNextChildren: Runnable) {}
-
-                    override fun isObsolete(): Boolean = false
-                })
-            }
-        } ?: emptyList()
+        return FrameVariablesCollector.collectVariables(frame)
     }
 
     private fun getSourceLocation(frame: XStackFrame): SourceLocation? {
@@ -197,46 +124,6 @@ object SessionStatusCollector {
 
     private fun getStackDepth(session: XDebugSession): Int {
         return if (session.currentStackFrame != null) 1 else 0
-    }
-
-    private fun getValuePresentation(
-        value: XValue,
-        callback: (String, String, Boolean) -> Unit
-    ) {
-        value.computePresentation(object : XValueNode {
-            override fun setPresentation(
-                icon: Icon?,
-                type: String?,
-                valueText: String,
-                hasChildren: Boolean
-            ) {
-                callback(valueText, type ?: "unknown", hasChildren)
-            }
-
-            override fun setPresentation(
-                icon: Icon?,
-                presentation: XValuePresentation,
-                hasChildren: Boolean
-            ) {
-                val valueText = buildString {
-                    presentation.renderValue(object : XValuePresentation.XValueTextRenderer {
-                        override fun renderValue(v: String) { append(v) }
-                        override fun renderStringValue(v: String) { append("\"$v\"") }
-                        override fun renderNumericValue(v: String) { append(v) }
-                        override fun renderKeywordValue(v: String) { append(v) }
-                        override fun renderValue(v: String, key: com.intellij.openapi.editor.colors.TextAttributesKey) { append(v) }
-                        override fun renderStringValue(v: String, additionalSpecialCharsToHighlight: String?, maxLength: Int) { append("\"$v\"") }
-                        override fun renderComment(comment: String) { append(" // $comment") }
-                        override fun renderSpecialSymbol(symbol: String) { append(symbol) }
-                        override fun renderError(error: String) { append("ERROR: $error") }
-                    })
-                }
-                callback(valueText, presentation.type ?: "unknown", hasChildren)
-            }
-
-            override fun setFullValueEvaluator(fullValueEvaluator: XFullValueEvaluator) {}
-            override fun isObsolete(): Boolean = false
-        }, XValuePlace.TREE)
     }
 
     private fun getSourceContext(

@@ -4,9 +4,9 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolAnnot
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.server.models.ToolCallResult
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.AbstractMcpTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.models.ExecutionControlResult
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.util.VirtualFileResolver
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.XDebuggerUtil
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -37,7 +37,7 @@ class RunToLineTool : AbstractMcpTool() {
             put(sessionName, sessionSchema)
             putJsonObject("file_path") {
                 put("type", "string")
-                put("description", "Absolute path to the source file")
+                put("description", "Absolute path to the source file. Files inside JAR/ZIP archives are supported with the '!/' separator, e.g. '/path/to/lib-sources.jar!/com/example/Foo.kt' (the IDE's 'Copy Absolute Path' format for library sources).")
             }
             putJsonObject("line") {
                 put("type", "integer")
@@ -69,8 +69,12 @@ class RunToLineTool : AbstractMcpTool() {
             return createErrorResult("Session must be paused to run to line")
         }
 
-        val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
-            ?: return createErrorResult("File not found: $filePath")
+        val virtualFile = VirtualFileResolver.resolve(filePath)
+            ?: return createErrorResult(
+                "File not found: $filePath. " +
+                    "For files inside JAR archives, use the '!/' separator " +
+                    "(e.g. /path/to/lib-sources.jar!/com/example/Foo.kt)."
+            )
 
         val position = XDebuggerUtil.getInstance().createPosition(virtualFile, line - 1)
             ?: return createErrorResult("Cannot create position for $filePath:$line")

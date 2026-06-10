@@ -104,6 +104,7 @@ Tools are organized into categories based on functionality:
 - [Evaluation Tools](#evaluation-tools)
   - [evaluate_expression](#evaluate_expression)
 - [Error Handling](#error-handling)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -549,7 +550,7 @@ Sets a line breakpoint at the specified location.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `file_path` | string | Yes | Absolute path to the file |
+| `file_path` | string | Yes | Absolute path to the file. Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | Yes | 1-based line number |
 | `condition` | string | No | Conditional expression (only pause when true) |
 | `log_message` | string | No | Log message (use `{expr}` for evaluation) |
@@ -881,7 +882,7 @@ Continues execution until the specified line is reached.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `file_path` | string | Yes | Absolute path to target file |
+| `file_path` | string | Yes | Absolute path to target file. Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | Yes | 1-based line number to run to |
 | `session_id` | string | No | Session to run |
 | `project_path` | string | No | Project path |
@@ -1225,7 +1226,7 @@ Gets source code around the current execution point or specified location.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `file_path` | string | No | File path (uses current location if omitted) |
+| `file_path` | string | No | File path (uses current location if omitted). Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | No | Center line (uses current if omitted) |
 | `context_lines` | integer | No | Lines above/below (default: 10) |
 | `session_id` | string | No | Session ID |
@@ -1428,3 +1429,11 @@ If `state` is not `"paused"`, wait for a breakpoint to be hit or call `pause`.
 6. **Navigate** - Use `step_over`, `step_into`, `step_out`, or `resume_execution`
 7. **Repeat** - Continue inspecting and stepping until issue found
 8. **Clean up** - Use `stop_debug_session` and `remove_breakpoint`
+
+---
+
+## Troubleshooting
+
+### Value shown as `<value not yet computed>`
+
+A variable value of `<value not yet computed>` means the debuggee's `toString()` evaluation did not finish within the timeout. Re-run `get_variables` or evaluate the specific expression with `evaluate_expression` to get the value.

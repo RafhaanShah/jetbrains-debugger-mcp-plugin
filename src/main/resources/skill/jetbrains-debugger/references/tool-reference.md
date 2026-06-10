@@ -106,7 +106,7 @@ Set a line breakpoint with optional conditions or log messages.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `project_path` | string | No | | Project path |
-| `file_path` | string | **Yes** | | **Absolute** file path |
+| `file_path` | string | **Yes** | | **Absolute** file path. Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | **Yes** | | 1-based line number (min: 1) |
 | `condition` | string | No | | Boolean expression (e.g., `"count > 10"`) |
 | `log_message` | string | No | | Message with `{expression}` placeholders |
@@ -196,7 +196,7 @@ Continue execution until a specific line is reached.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `session_id` | string | No | Session ID |
-| `file_path` | string | **Yes** | Absolute file path |
+| `file_path` | string | **Yes** | Absolute file path. Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | **Yes** | 1-based target line (min: 1) |
 | `project_path` | string | No | Project path |
 
@@ -301,7 +301,7 @@ Get source code lines around a location.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `session_id` | string | No | | Session ID |
-| `file_path` | string | No | | Absolute path (uses current location if omitted) |
+| `file_path` | string | No | | Absolute path (uses current location if omitted). Supports files inside JARs via the `!/` separator (e.g. `/path/to/lib-sources.jar!/com/example/Foo.kt`) |
 | `line` | integer | No | | 1-based line (uses current if omitted) |
 | `lines_before` | integer | No | `5` | Context lines before |
 | `lines_after` | integer | No | `5` | Context lines after |
