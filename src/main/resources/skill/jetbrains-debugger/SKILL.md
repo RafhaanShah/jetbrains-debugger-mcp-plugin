@@ -3,8 +3,8 @@ name: jetbrains-debugger
 description: >-
   Guide for using JetBrains IDE Debugger MCP tools to programmatically debug applications.
   TRIGGER when ANY of these MCP tools are available: list_run_configurations, execute_run_configuration,
-  start_debug_session, stop_debug_session, get_debug_session_status, list_debug_sessions,
-  set_breakpoint, remove_breakpoint, list_breakpoints, resume_execution, pause_execution,
+  start_debug_session, attach_android_debugger, stop_debug_session, get_debug_session_status,
+  list_debug_sessions, set_breakpoint, remove_breakpoint, list_breakpoints, resume_execution, pause_execution,
   step_over, step_into, step_out, run_to_line, wait_for_pause, get_stack_trace, select_stack_frame,
   list_threads, get_variables, set_variable, get_source_context, evaluate_expression.
   Use when debugging any application, investigating bugs, tracing execution flow, inspecting
@@ -51,6 +51,16 @@ Use these tools to **actually debug** applications in a JetBrains IDE rather tha
 10. stop_debug_session              -- Clean up when done
 ```
 
+### Android Attach Sequence
+
+```
+1. set_breakpoint                   -- Set breakpoint(s) before attaching
+2. attach_android_debugger          -- Attach to a running Android app by package_name, process_name, or pid
+3. wait_for_pause(timeout=60)       -- Block until breakpoint hit (returns full status)
+4. Use normal stepping/inspection tools
+5. stop_debug_session               -- Detach/stop when done
+```
+
 ### Critical Rules
 
 1. **Set breakpoints BEFORE starting the session.** Breakpoints can be set without an active session. Setting them first ensures the program pauses where you need it.
@@ -67,7 +77,9 @@ Use these tools to **actually debug** applications in a JetBrains IDE rather tha
 
 7. **`project_path` is required when multiple projects are open.** If omitted with multiple projects, tools return an error listing available projects.
 
-8. **`evaluate_expression` may be safety-filtered by IDE settings.** If a call is blocked, prefer `get_variables`, simple field/arithmetic expressions, or a narrower expression that avoids method calls and risky APIs. Do not retry blocked process, filesystem, network, reflection, native-loading, or environment/system-property operations unless the user explicitly changes the IDE setting.
+8. **Use `attach_android_debugger` for already-running Android apps.** Prefer `package_name` or `process_name`; add `device_serial` when multiple devices are connected. If the target is ambiguous, the tool returns candidates to choose from.
+
+9. **`evaluate_expression` may be safety-filtered by IDE settings.** If a call is blocked, prefer `get_variables`, simple field/arithmetic expressions, or a narrower expression that avoids method calls and risky APIs. Do not retry blocked process, filesystem, network, reflection, native-loading, or environment/system-property operations unless the user explicitly changes the IDE setting.
 
 ## Debugging Patterns
 
@@ -150,6 +162,7 @@ These use native debuggers (LLDB/GDB) with restrictions:
 | `list_run_configurations` | Find debuggable configurations | No |
 | `execute_run_configuration` | Run or debug a configuration | No |
 | `start_debug_session` | Start debugging | No |
+| `attach_android_debugger` | Attach to a running Android app process | No |
 | `stop_debug_session` | End debugging | No |
 | `list_debug_sessions` | See active sessions | No |
 | `get_debug_session_status` | **Primary inspector** -- variables, stack, source, location | No (but most useful when paused) |

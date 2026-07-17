@@ -116,3 +116,19 @@ data class WaitForPauseResult(
     val currentThread: ThreadInfo? = null,
     val threadCount: Int = 0
 )
+
+/**
+ * Result of attach_android_debugger tool.
+ */
+@Serializable
+data class AttachAndroidDebuggerResult(
+    val status: String,
+    val message: String,
+    val session: DebugSessionInfo? = null,
+    val deviceSerial: String,
+    val pid: Int,
+    val packageName: String? = null,
+    val processName: String? = null,
+    val debuggerId: String,
+    val debuggerName: String
+)

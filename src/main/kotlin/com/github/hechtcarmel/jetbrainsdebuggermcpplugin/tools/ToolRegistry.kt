@@ -15,6 +15,7 @@ import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.execution.WaitFor
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.navigation.GetSourceContextTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.runconfig.ListRunConfigurationsTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.runconfig.RunConfigurationTool
+import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.session.AttachAndroidDebuggerTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.session.GetDebugSessionStatusTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.session.ListDebugSessionsTool
 import com.github.hechtcarmel.jetbrainsdebuggermcpplugin.tools.session.StartDebugSessionTool
@@ -61,6 +62,7 @@ class ToolRegistry {
         // Debug Session Tools
         register(ListDebugSessionsTool())
         register(StartDebugSessionTool())
+        register(AttachAndroidDebuggerTool())
         register(StopDebugSessionTool())
         register(GetDebugSessionStatusTool())
 

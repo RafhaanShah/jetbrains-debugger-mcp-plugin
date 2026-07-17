@@ -1,6 +1,6 @@
 # Debugger MCP Server - Tool Reference
 
-This document provides detailed documentation for all 22 MCP tools available in the JetBrains Debugger MCP Server plugin.
+This document provides detailed documentation for MCP tools available in the JetBrains Debugger MCP Server plugin.
 
 ## Tool Overview
 
@@ -13,12 +13,13 @@ Tools are organized into categories based on functionality:
 | `list_run_configurations` | List all available run configurations |
 | `execute_run_configuration` | Execute a run configuration in run or debug mode |
 
-### Debug Session Tools (4)
+### Debug Session Tools (5)
 
 | Tool | Description |
 |------|-------------|
 | `list_debug_sessions` | List all active debug sessions |
 | `start_debug_session` | Start a new debug session |
+| `attach_android_debugger` | Attach to a running Android app process |
 | `stop_debug_session` | Stop a debug session |
 | `get_debug_session_status` | Get comprehensive session status |
 
@@ -79,6 +80,7 @@ Tools are organized into categories based on functionality:
 - [Debug Session Tools](#debug-session-tools)
   - [list_debug_sessions](#list_debug_sessions)
   - [start_debug_session](#start_debug_session)
+  - [attach_android_debugger](#attach_android_debugger)
   - [stop_debug_session](#stop_debug_session)
   - [get_debug_session_status](#get_debug_session_status)
 - [Breakpoint Tools](#breakpoint-tools)
@@ -314,6 +316,60 @@ Starts a new debug session for a run configuration.
   "name": "Application",
   "state": "running",
   "message": "Debug session started for 'Application'"
+}
+```
+
+---
+
+### attach_android_debugger
+
+Attaches Android Studio's debugger to an already-running Android app process without opening the IDE chooser.
+
+**Use when:**
+- Debugging an Android app that is already running
+- Attaching to a specific device, package, process, or PID
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `project_path` | string | No | Project path |
+| `device_serial` | string | No | Android device serial; use when multiple devices are connected |
+| `process_name` | string | No | Exact process name, for example `com.example.app` or `com.example.app:remote` |
+| `package_name` | string | No | Exact package name |
+| `pid` | integer | No | Android process ID |
+| `debugger_id` | string | No | Debugger ID such as `Auto`, `Java`, `Native`, or `Hybrid`; defaults to Android Studio's default |
+| `timeout_ms` | integer | No | Max wait for the debug session to appear; defaults to `30000` |
+
+If filters are ambiguous, the tool returns matching candidates so you can retry with a narrower target.
+
+**Example Request:**
+
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "attach_android_debugger",
+    "arguments": {
+      "package_name": "com.example.app",
+      "device_serial": "emulator-5554"
+    }
+  }
+}
+```
+
+**Example Response:**
+
+```json
+{
+  "status": "attached",
+  "message": "Android debugger attached",
+  "deviceSerial": "emulator-5554",
+  "pid": 1234,
+  "packageName": "com.example.app",
+  "processName": "com.example.app",
+  "debuggerId": "Java",
+  "debuggerName": "Java Only"
 }
 ```
 
@@ -1422,7 +1478,7 @@ If `state` is not `"paused"`, wait for a breakpoint to be hit or call `pause`.
 ### Typical Debugging Flow
 
 1. **Set breakpoints** - Use `set_breakpoint` at points of interest
-2. **Start debugging** - Use `start_debug_session` or `execute_run_configuration`
+2. **Start debugging** - Use `start_debug_session`, `execute_run_configuration`, or `attach_android_debugger` for a running Android app
 3. **Wait for pause** - Session pauses at breakpoint
 4. **Inspect state** - Use `get_debug_session_status` for comprehensive view
 5. **Evaluate/modify** - Use `evaluate_expression`, `get_variables`, `set_variable`

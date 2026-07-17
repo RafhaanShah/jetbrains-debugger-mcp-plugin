@@ -227,7 +227,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 
 ## Available Tools
 
-The plugin provides **22 MCP tools** organized by category:
+The plugin provides **24 MCP tools** organized by category:
 
 ### Run Configuration Tools
 
@@ -242,6 +242,7 @@ The plugin provides **22 MCP tools** organized by category:
 |------|-------------|
 | `list_debug_sessions` | List all active debug sessions with state and metadata |
 | `start_debug_session` | Start a new debug session for a run configuration |
+| `attach_android_debugger` | Attach Android Studio's debugger to a running Android app process |
 | `stop_debug_session` | Stop/terminate a debug session |
 | `get_debug_session_status` | Get comprehensive status (variables, stack, source) in one call |
 

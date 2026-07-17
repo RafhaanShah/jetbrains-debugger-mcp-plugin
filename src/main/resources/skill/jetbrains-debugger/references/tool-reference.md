@@ -54,6 +54,23 @@ Start a new debug session for a run configuration.
 
 **Note:** Polls for up to 30 seconds for the session to start. The session may still be in "starting" state for very slow targets.
 
+### `attach_android_debugger`
+Attach Android Studio's debugger to an already-running Android app process without opening the IDE chooser.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `project_path` | string | No | | Project path |
+| `device_serial` | string | No | | Android device serial. Use when multiple devices are connected. |
+| `process_name` | string | No | | Exact process name, e.g. `com.example.app` or `com.example.app:remote` |
+| `package_name` | string | No | | Exact package name |
+| `pid` | integer | No | | Android process ID |
+| `debugger_id` | string | No | Android Studio default | Debugger ID such as `Auto`, `Java`, `Native`, or `Hybrid` |
+| `timeout_ms` | integer | No | `30000` | Max wait for the debug session to appear |
+
+**Returns:** `status` ("attached"/"already_attached"/"starting"), `session` (DebugSessionInfo), `deviceSerial`, `pid`, `packageName`, `processName`, `debuggerId`, `debuggerName`, `message`
+
+**Note:** If target filters are omitted, attaches only when exactly one valid process is available. If multiple processes match, returns candidate device/pid/package/process values so you can retry with a narrower target.
+
 ### `stop_debug_session`
 Stop/terminate a debug session.
 

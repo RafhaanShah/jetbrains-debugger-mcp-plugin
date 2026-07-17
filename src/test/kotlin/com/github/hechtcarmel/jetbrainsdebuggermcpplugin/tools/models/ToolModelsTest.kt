@@ -245,4 +245,25 @@ class ToolModelsTest {
         assertTrue(encoded.contains("\"action\":\"resume\""))
         assertTrue(encoded.contains("\"status\":\"success\""))
     }
+
+    @Test
+    fun `AttachAndroidDebuggerResult serialization`() {
+        val result = AttachAndroidDebuggerResult(
+            status = "attached",
+            message = "Android debugger attached",
+            deviceSerial = "emulator-5554",
+            pid = 1234,
+            packageName = "com.example",
+            processName = "com.example",
+            debuggerId = "Java",
+            debuggerName = "Java Only"
+        )
+
+        val encoded = json.encodeToString(result)
+
+        assertTrue(encoded.contains("\"status\":\"attached\""))
+        assertTrue(encoded.contains("\"deviceSerial\":\"emulator-5554\""))
+        assertTrue(encoded.contains("\"pid\":1234"))
+        assertTrue(encoded.contains("\"debuggerId\":\"Java\""))
+    }
 }
